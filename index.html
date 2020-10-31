@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        .hex {
+            color: green;
+            left: 20px;
+            position: relative;
+        }
+
+        .bin {
+            color: red;
+            left: 20px;
+            position: relative;
+        }
+    </style>
+</head>
+
+<body>
+    <div style="width: 48%; float: left;">
+        <h4>Com ports: </h4>
+        <div id="ports-box">
+
+        </div>
+        <br />
+        <br />
+        <h4>Select and open port: </h4>
+        <div>
+            <form>
+                <label>Port:</label>
+                <input type="text" id="txtCom">
+
+                <label>Baudrate:</label>
+                <input type="text" id="txtBaudRate">
+
+                <input id="btnOpenPort" type="button" value="open" onclick="open_port()">
+                <input id="btnClosePort" type="button" value="close" onclick="close_port()">
+            </form>
+
+        </div>
+        <br />
+        <br />
+        <h4>Write port: </h4>
+        <div>
+            <form>
+                <label>Write on port (numbers with space):</label>
+                <input type="text" id="txtInput" placeholder="example: 1 2 244 145" value="">
+                <input type="button" value="send" onclick="send()">
+            </form>
+        </div>
+    </div>
+    <div style="width: 48%; float: left; border: 1px solid teal; padding: 5px;">
+        <h4>Message box: </h4>
+        <div id="message-box">
+
+        </div>
+        <form>
+            <input type="button" value="clear" onclick="clear_box()">
+        </form>
+    </div>
+</body>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    let message_box = document.getElementById("message-box");
+    let ports_box = document.getElementById("ports-box")
+    let txtBaudRate = document.getElementById("txtBaudRate")
+    let txtCom = document.getElementById("txtCom")
+    // debugger
+    let socket = io()
+    socket.on('ihaveabuffer', (msg) => {
+        var node = document.createElement("p");
+        node.innerHTML = `Recieved buffer : <p class="hex">HEX: ${msg.hex}</p><p class="bin"> BIN: ${msg.bin}</p>`;
+
+        message_box.append(node);
+    });
+    socket.on('ihaveamsg', (msg) => {
+        var node = document.createElement("p");
+        node.innerText = `Message : ${msg}`;
+
+        message_box.append(node);
+    });
+    socket.on('portslist', (ports) => {
+
+
+        ports.forEach(element => {
+            var node = document.createElement("p");
+            node.classList.add("port");
+            node.innerHTML = `${JSON.stringify(element)}`;
+            ports_box.append(node);
+        });
+
+    });
+
+
+    let send = () => {
+        let bytes = document.getElementById("txtInput").value.split(' ').map(o => parseInt(o));
+        socket.emit('bufferfromclient', bytes);
+    }
+
+    let open_port = () => {
+
+        socket.emit('com_connect', txtCom.value, parseInt(txtBaudRate.value));
+    }
+
+    let close_port = () => {
+
+        socket.emit('com_disconnect', txtCom.value, parseInt(txtBaudRate.value));
+    }
+
+    let clear_box = () => {
+        message_box.innerHTML = "";
+    }
+</script>
+
+</html>
